@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wattsup</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f1f4f9, #dff1ff);
+      color: #333;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #00796b;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #00796b;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #004d40;
+    }
+
+    a {
+      color: #00796b;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+      text-align: center;
+      width: 100%;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const app = document.getElementById('app');
+    let role = '';
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let admins = JSON.parse(localStorage.getItem('admins')) || [];
+
+    function showPage(content) {
+      app.innerHTML = `<div class="container">${content}</div>`;
+    }
+
+    function welcomePage() {
+      showPage(`
+        <h1>Wattsup</h1>
+        <h2>To stay updated on your power usage</h2>
+        <button onclick="roleSelection()">Get Started</button>
+      `);
+    }
+
+    function roleSelection() {
+      showPage(`
+        <h2>Select Role</h2>
+        <button onclick="setRole('user')">User</button>
+        <button onclick="setRole('admin')">Admin</button>
+      `);
+    }
+
+    function setRole(r) {
+      role = r;
+      loginPage();
+    }
+
+    function loginPage() {
+      const input = role === 'user'
+        ? `<input id="meterNumber" placeholder="Meterboard Number">`
+        : `<input id="adminName" placeholder="Name">`;
+
+      showPage(`
+        <h2>${role.toUpperCase()} Login</h2>
+        ${input}
+        <input id="password" type="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <a href="#" onclick="signupPage()">Not registered? Sign up here</a>
+      `);
+    }
+
+    function signupPage() {
+      if (role === 'user') {
+        showPage(`
+          <h2>User Signup</h2>
+          <input id="name" placeholder="Name">
+          <input id="meterNumber" placeholder="Meterboard Number">
+          <input id="place" placeholder="Place">
+          <input id="electricityId" placeholder="Electricity ID">
+          <input id="password" type="password" placeholder="New Password">
+          <button onclick="signup()">Signup</button>
+        `);
+      } else {
+        showPage(`
+          <h2>Admin Signup</h2>
+          <input id="name" placeholder="Name">
+          <input id="designation" placeholder="Designation">
+          <input id="branch" placeholder="Branch">
+          <input id="employeeId" placeholder="Employee ID">
+          <input id="password" type="password" placeholder="Password">
+          <button onclick="signup()">Signup</button>
+        `);
+      }
+    }
+
+    function signup() {
+      if (role === 'user') {
+        const user = {
+          name: document.getElementById('name').value,
+          meterNumber: document.getElementById('meterNumber').value,
+          place: document.getElementById('place').value,
+          electricityId: document.getElementById('electricityId').value,
+          password: document.getElementById('password').value,
+          usage: '120 kWh',
+          bill: '₹480',
+          theft: 'None',
+          status: 'Unpaid'
+        };
+        users.push(user);
+        localStorage.setItem('users', JSON.stringify(users));
+      } else {
+        const admin = {
+          name: document.getElementById('name').value,
+          designation: document.getElementById('designation').value,
+          branch: document.getElementById('branch').value,
+          employeeId: document.getElementById('employeeId').value,
+          password: document.getElementById('password').value
+        };
+        admins.push(admin);
+        localStorage.setItem('admins', JSON.stringify(admins));
+      }
+      alert("Signup successful!");
+      loginPage();
+    }
+
+    function login() {
+      const password = document.getElementById('password').value;
+
+      if (role === 'user') {
+        const meterNumber = document.getElementById('meterNumber').value;
+        const user = users.find(u => u.meterNumber === meterNumber && u.password === password);
+        if (user) {
+          userDashboard(user);
+        } else {
+          alert("Invalid user credentials");
+        }
+      } else {
+        const name = document.getElementById('adminName').value;
+        const admin = admins.find(a => a.name === name && a.password === password);
+        if (admin) {
+          adminDashboard(admin);
+        } else {
+          alert("Invalid admin credentials");
+        }
+      }
+    }
+
+    function userDashboard(user) {
+      showPage(`
+        <h2>Welcome, ${user.name}</h2>
+        <p><strong>Power Usage:</strong> ${user.usage}</p>
+        <p><strong>Bill Amount:</strong> ${user.bill}</p>
+        <p><strong>Power Theft Status:</strong> ${user.theft}</p>
+        <p><strong>Payment Status:</strong> ${user.status}</p>
+        <button onclick="paymentPage('${user.meterNumber}')">Pay</button>
+        <input id="searchMeter" placeholder="Search by Meter Number">
+        <button onclick="searchUser()">Search</button>
+      `);
+    }
+
+    function paymentPage(meterNumber) {
+      showPage(`
+        <h2>Payment</h2>
+        <input id="amount" placeholder="Enter Amount">
+        <select id="method">
+          <option value="UPI">UPI</option>
+          <option value="QR">QR</option>
+        </select>
+        <button onclick="makePayment('${meterNumber}')">Pay</button>
+      `);
+    }
+
+    function makePayment(meterNumber) {
+      const amount = document.getElementById('amount').value;
+      const method = document.getElementById('method').value;
+      const user = users.find(u => u.meterNumber === meterNumber);
+      user.status = 'Paid';
+      localStorage.setItem('users', JSON.stringify(users));
+      alert(`Payment of ₹${amount} via ${method} successful!`);
+      userDashboard(user);
+    }
+
+    function searchUser() {
+      const meter = document.getElementById('searchMeter').value;
+      const user = users.find(u => u.meterNumber === meter);
+      if (user) {
+        alert(`Name: ${user.name}\nUsage: ${user.usage}\nBill: ${user.bill}\nStatus: ${user.status}`);
+      } else {
+        alert('Meterboard not found.');
+      }
+    }
+
+    function adminDashboard(admin) {
+      showPage(`
+        <h2>Welcome Admin ${admin.name}</h2>
+        <p><strong>Branch:</strong> ${admin.branch}</p>
+        <p><strong>Designation:</strong> ${admin.designation}</p>
+        <h3>All Users</h3>
+        ${users.map(u => `
+          <p><strong>${u.name}</strong> - Usage: ${u.usage}, Bill: ${u.bill}, Status: ${u.status}</p>
+        `).join('')}
+        <button onclick="alertUser()">Send Alert</button>
+      `);
+    }
+
+    function alertUser() {
+      alert("Alert sent to all users!");
+    }
+
+    welcomePage();
+  </script>
+</body>
+</html>
+
